@@ -321,7 +321,9 @@ class ClientIO extends ClientBase with ClientMixin {
       callbackUrlScheme: callbackUrlScheme != null && _customSchemeAllowed
           ? callbackUrlScheme
           : "appwrite-callback-" + config['project']!,
-      preferEphemeral: true,
+      options: const FlutterWebAuth2Options(
+        intentFlags: ephemeralIntentFlags,
+      )
     ).then((value) async {
       Uri url = Uri.parse(value);
       final key = url.queryParameters['key'];
