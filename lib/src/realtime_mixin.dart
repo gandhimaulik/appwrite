@@ -74,7 +74,7 @@ mixin RealtimeMixin {
             break;
           case 'event':
             final message = RealtimeMessage.fromMap(data.data);
-            for (var subscription in _subscriptions.values) {
+            for (var subscription in List.from(_subscriptions.values)) {
               for (var channel in message.channels) {
                 if (subscription.channels.contains(channel)) {
                   subscription.controller.add(message);
@@ -85,13 +85,13 @@ mixin RealtimeMixin {
         }
       }, onDone: () {
         if (!_notifyDone) return;
-        for (var subscription in _subscriptions.values) {
+        for (var subscription in List.from(_subscriptions.values)) {
           subscription.close();
         }
         _channels.clear();
         _closeConnection();
       }, onError: (err, stack) {
-        for (var subscription in _subscriptions.values) {
+        for (var subscription in List.from(_subscriptions.values)) {
           subscription.controller.addError(err, stack);
         }
         if (_websok?.closeCode != null && _websok?.closeCode != 1008) {
