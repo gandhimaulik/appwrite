@@ -1,4 +1,5 @@
 import 'enums.dart';
+import 'package:http/http.dart' as http;
 import 'client_stub.dart'
     if (dart.library.html) 'client_browser.dart'
     if (dart.library.io) 'client_io.dart';
@@ -22,10 +23,23 @@ abstract class Client {
   String? get endPointRealtime => _endPointRealtime;
 
   /// Initializes a [Client].
-  factory Client(
-          {String endPoint = 'https://HOSTNAME/v1',
-          bool selfSigned = false}) =>
-      createClient(endPoint: endPoint, selfSigned: selfSigned);
+  ///
+  /// [endPoint] (required) is the Appwrite server endpoint.
+  /// [selfSigned] (optional, defaults to `false`) is whether to allow self-signed
+  /// certificates. This is only applicable when using the default internal HTTP client on IO platforms.
+  /// It is ignored if a custom [httpClient] is provided or on web platforms.
+  /// [httpClient] (optional) is a custom `http.Client` instance to be used for making
+  /// network requests. If not provided, a default platform-specific client will be used.
+  /// When providing a custom client, you are responsible for its configuration (e.g., SSL verification, proxy settings).
+  factory Client({
+    String endPoint = 'https://HOSTNAME/v1',
+    bool selfSigned = false,
+    http.Client? httpClient,
+  }) =>
+      createClient(
+          endPoint: endPoint,
+          selfSigned: selfSigned,
+          httpClient: httpClient);
 
   /// Handle OAuth2 session creation.
   Future webAuth(Uri url, {String? callbackUrlScheme});

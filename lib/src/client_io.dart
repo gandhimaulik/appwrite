@@ -21,10 +21,12 @@ import 'upload_progress.dart';
 ClientBase createClient({
   required String endPoint,
   required bool selfSigned,
+  http.Client? httpClient,
 }) =>
     ClientIO(
       endPoint: endPoint,
       selfSigned: selfSigned,
+      httpClient: httpClient,
     );
 
 class ClientIO extends ClientBase with ClientMixin {
@@ -38,7 +40,7 @@ class ClientIO extends ClientBase with ClientMixin {
   bool _initialized = false;
   String? _endPointRealtime;
   late http.Client _httpClient;
-  late HttpClient _nativeClient;
+  HttpClient? _nativeClient; // Can be null if user provides their own http.Client
   late CookieJar _cookieJar;
   final List<Interceptor> _interceptors = [];
 
@@ -48,14 +50,25 @@ class ClientIO extends ClientBase with ClientMixin {
   @override
   String? get endPointRealtime => _endPointRealtime;
 
+  /// Initializes a [ClientIO] instance.
+  ///
+  /// [endPoint] is the Appwrite server endpoint.
+  /// [selfSigned] controls self-signed certificate behavior if no custom [httpClient] is provided.
+  /// [httpClient] allows providing a custom `http.Client`. If provided, [selfSigned] is ignored.
   ClientIO({
     String endPoint = 'https://HOSTNAME/v1',
     this.selfSigned = false,
+    http.Client? httpClient,
   }) : _endPoint = endPoint {
-    _nativeClient = HttpClient()
-      ..badCertificateCallback =
-          ((X509Certificate cert, String host, int port) => selfSigned);
-    _httpClient = IOClient(_nativeClient);
+    if (httpClient == null) {
+      _nativeClient = HttpClient()
+        ..badCertificateCallback =
+            ((X509Certificate cert, String host, int port) => selfSigned);
+      _httpClient = IOClient(_nativeClient!);
+    } else {
+      _httpClient = httpClient;
+      // _nativeClient remains null, selfSigned is not applicable directly
+    }
     _endPointRealtime = endPoint
         .replaceFirst('https://', 'wss://')
         .replaceFirst('http://', 'ws://');
@@ -110,7 +123,7 @@ class ClientIO extends ClientBase with ClientMixin {
   @override
   ClientIO setSelfSigned({bool status = true}) {
     selfSigned = status;
-    _nativeClient.badCertificateCallback =
+    _nativeClient?.badCertificateCallback = // Only if _nativeClient exists
         ((X509Certificate cert, String host, int port) => status);
     return this;
   }

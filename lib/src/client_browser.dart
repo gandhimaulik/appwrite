@@ -15,8 +15,12 @@ import 'response.dart';
 ClientBase createClient({
   required String endPoint,
   required bool selfSigned,
+  http.Client? httpClient,
 }) =>
-    ClientBrowser(endPoint: endPoint, selfSigned: selfSigned);
+    ClientBrowser(
+        endPoint: endPoint,
+        selfSigned: selfSigned,
+        httpClient: httpClient);
 
 class ClientBrowser extends ClientBase with ClientMixin {
   static const int CHUNK_SIZE = 5*1024*1024;
@@ -24,17 +28,23 @@ class ClientBrowser extends ClientBase with ClientMixin {
   Map<String, String>? _headers;
   @override
   late Map<String, String> config;
-  late BrowserClient _httpClient;
+  late http.Client _httpClient;
   String? _endPointRealtime;
 
   @override
   String? get endPointRealtime => _endPointRealtime;
 
+  /// Initializes a [ClientBrowser] instance.
+  ///
+  /// [endPoint] is the Appwrite server endpoint.
+  /// [selfSigned] is ignored on web platforms.
+  /// [httpClient] allows providing a custom `http.Client`.
   ClientBrowser({
     String endPoint = 'https://HOSTNAME/v1',
-    bool selfSigned = false,
+    bool selfSigned = false, // Not used in BrowserClient directly for certs
+    http.Client? httpClient,
   }) : _endPoint = endPoint {
-    _httpClient = BrowserClient();
+    _httpClient = httpClient ?? BrowserClient();
     _endPointRealtime = endPoint
         .replaceFirst('https://', 'wss://')
         .replaceFirst('http://', 'ws://');
@@ -110,7 +120,9 @@ class ClientBrowser extends ClientBase with ClientMixin {
       addHeader('x-fallback-cookies',
           html.window.localStorage['cookieFallback'] ?? '');
     }
-    _httpClient.withCredentials = true;
+    if (_httpClient is BrowserClient) {
+      (_httpClient as BrowserClient).withCredentials = true;
+    }
   }
 
   @override
